@@ -253,22 +253,6 @@ h3 {
     isolation: isolate;
 }
 
-.hero::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image:
-        radial-gradient(circle at 20% 50%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(218, 112, 214, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 20%, rgba(171, 71, 188, 0.08) 0%, transparent 50%);
-    animation: gradientMove 20s ease infinite;
-    z-index: 0;
-    pointer-events: none;
-    will-change: transform;
-}
 
 @keyframes gradientShift {
     0% {
