@@ -44,7 +44,8 @@ or Python <3
 python3 -c "import bcrypt; print(bcrypt.hashpw('$PASSWORD'.encode(), bcrypt.gensalt()).decode())"
 ```
 
-> ![NOTE] The Dart application uses the `bcrypt` package which generates hashes
+> [!NOTE]
+> The Dart application uses the `bcrypt` package, which generates hashes
 > compatible with standard bcrypt implementations.
 
 #### Generate Session Secret
@@ -75,7 +76,8 @@ then set restrictive permission:
 chmod 600 .registry_admin_config
 ```
 
-> ![NOTE] PLEASE remember to replace `YOUR_PASSWORD` with your actual password.
+> [!NOTE]
+> PLEASE remember to replace `YOUR_PASSWORD` with your actual password.
 
 ## Accessing the Admin Panel
 
