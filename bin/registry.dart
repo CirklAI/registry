@@ -16,6 +16,6 @@ Future<void> main() async {
   registryDatabase.loadFromJsonFile('docs/schema_search.json');
   registryDatabase.loadFromJsonFile('docs/schema_program.json');
 
-  final server = Server(port: 8080, logger: logger, database: registryDatabase);
+  final server = Server(port: 9502, logger: logger, database: registryDatabase);
   await server.start();
 }
