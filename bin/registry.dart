@@ -5,6 +5,7 @@ import 'package:sqlite3/sqlite3.dart';
 import 'package:registry/database.dart' show RegistryDatabase;
 
 Future<void> main() async {
+  final startTime = DateTime.now();
   final Logger logger = Logger();
   logger.info("Starting Cirkl Labs/Registry");
   logger.info(" Dart: v${Platform.version}");
@@ -18,4 +19,7 @@ Future<void> main() async {
 
   final server = Server(port: 9502, logger: logger, database: registryDatabase);
   await server.start();
+
+  final duration = DateTime.now().difference(startTime);
+  logger.info("Started in ${duration.inMilliseconds}ms");
 }
