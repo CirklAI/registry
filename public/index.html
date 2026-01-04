@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cirkl Labs - Registry</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            padding: 2rem;
+            flex: 1;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+        }
+
+        .section p {
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="hero">
+        <svg class="noise-svg" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="noise-filter">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch">
+                        <animate attributeName="baseFrequency" values="0.9;1.1;0.9" dur="3s" repeatCount="indefinite" />
+                    </feTurbulence>
+                </filter>
+            </defs>
+            <rect x="0" y="0" width="100%" height="100%" filter="url(#noise-filter)" />
+        </svg>
+        <div class="hero-content">
+            <h1>Cirkl Labs - Registry</h1>
+            <p>A database of vulnerable desktop applications and programs with vulnerabilities.</p>
+            <div class="search-container">
+                <div class="search-box-wrapper">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Search programs..." autocomplete="off"
+                            aria-label="Search programs" aria-expanded="false" aria-haspopup="listbox" role="combobox">
+                        <button id="search-button" class="btn" aria-label="Search"
+                            title="Search (Enter)">Search</button>
+                    </div>
+                    <div id="autocomplete-dropdown" class="autocomplete-dropdown" role="listbox"
+                        aria-label="Search suggestions"></div>
+                </div>
+                <div class="keybind-hints">
+                    <span class="keybind-hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+                    <span class="keybind-hint"><kbd>Enter</kbd> Select</span>
+                    <span class="keybind-hint"><kbd>Esc</kbd> Close</span>
+                </div>
+                <div id="search-error" class="message error"></div>
+            </div>
+            <p class="hero-footer">Questions? <a href="mailto:hi@cirkl.ai">hi@cirkl.ai</a></p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="search-results" class="search-results" tabindex="-1"></div>
+
+        <div class="section" id="api-docs" tabindex="-1">
+            <h2>API Documentation</h2>
+            <p>Use these endpoints to search and retrieve information about vulnerable applications and their known
+                issues.</p>
+
+            <div class="api-docs" id="api-docs-content">
+                <div class="endpoint">
+                    <span class="endpoint-method">GET</span>
+                    <div class="endpoint-path"><a href="/api/programs/search?q=Firefox&demo=true"
+                            target="_blank">/api/programs/search?q="Firefox"</a></div>
+                    <div class="endpoint-description">
+                        Returns known issues with versions of found apps that match the query. The query parameter
+                        <code>q</code> should contain the name of the application to search for.
+                    </div>
+                    <ul class="endpoint-params">
+                        <li><strong>Query Parameters:</strong></li>
+                        <li><code>q</code> (string, required) - The name of the application to search for</li>
+                        <li><strong>Returns:</strong> A list of applications matching the query, each with known issues
+                            and version information</li>
+                    </ul>
+                </div>
+
+                <div class="endpoint">
+                    <span class="endpoint-method">GET</span>
+                    <div class="endpoint-path"><a href="/api/programs/get?q=Firefox&demo=true" target="_blank"
+                            title="Open in new tab (Ctrl/Cmd+Click)">/api/programs/get?q="Firefox"</a></div>
+                    <div class="endpoint-description">
+                        Returns that single app or error if not found. The query parameter <code>q</code> should contain
+                        the exact name of the application.
+                    </div>
+                    <ul class="endpoint-params">
+                        <li><strong>Query Parameters:</strong></li>
+                        <li><code>q</code> (string, required) - The exact name of the application to retrieve</li>
+                        <li><strong>Returns:</strong> A single application object with known issues and version
+                            information, or an error if not found</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Cirkl Labs - Registry</p>
+        <p><span id="current-year"></span> All rights reserved.</p>
+        <script>
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            const searchResults = document.getElementById('search-results');
+            const searchError = document.getElementById('search-error');
+            const autocompleteDropdown = document.getElementById('autocomplete-dropdown');
+
+            let autocompleteItems = [];
+            let selectedIndex = -1;
+            let debounceTimer = null;
+            let lastQuery = '';
+
+            function hideError() {
+                searchError.classList.remove('show');
+                searchError.textContent = '';
+            }
+
+            function showError(message) {
+                searchError.textContent = message;
+                searchError.classList.add('show');
+            }
+
+            function hideAutocomplete() {
+                autocompleteDropdown.classList.remove('show');
+                autocompleteDropdown.innerHTML = '';
+                autocompleteItems = [];
+                selectedIndex = -1;
+                searchInput.setAttribute('aria-expanded', 'false');
+            }
+
+            function showAutocomplete(items) {
+                if (items.length === 0) {
+                    hideAutocomplete();
+                    return;
+                }
+
+                autocompleteItems = items;
+                autocompleteDropdown.innerHTML = '';
+                items.forEach((item, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'autocomplete-item';
+                    option.setAttribute('role', 'option');
+                    option.setAttribute('id', `autocomplete-option-${index}`);
+                    option.setAttribute('aria-selected', 'false');
+                    option.textContent = item.name;
+                    option.addEventListener('click', () => selectAutocompleteItem(index));
+                    option.addEventListener('mouseenter', () => {
+                        selectedIndex = index;
+                        updateAutocompleteSelection();
+                    });
+                    autocompleteDropdown.appendChild(option);
+                });
+
+                autocompleteDropdown.classList.add('show');
+                searchInput.setAttribute('aria-expanded', 'true');
+                selectedIndex = -1;
+                updateAutocompleteSelection();
+            }
+
+            function updateAutocompleteSelection() {
+                const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+                items.forEach((item, index) => {
+                    if (index === selectedIndex) {
+                        item.classList.add('selected');
+                        item.setAttribute('aria-selected', 'true');
+                    } else {
+                        item.classList.remove('selected');
+                        item.setAttribute('aria-selected', 'false');
+                    }
+                });
+            }
+
+            function selectAutocompleteItem(index) {
+                if (index >= 0 && index < autocompleteItems.length) {
+                    searchInput.value = autocompleteItems[index].name;
+                    hideAutocomplete();
+                    performSearch();
+                }
+            }
+
+            async function fetchAutocomplete(query) {
+                if (query.length < 2) {
+                    hideAutocomplete();
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/programs/search?q=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+
+                    if (response.ok && data.programs) {
+                        const suggestions = data.programs.slice(0, 5).map(p => ({ name: p.name }));
+                        showAutocomplete(suggestions);
+                    } else {
+                        hideAutocomplete();
+                    }
+                } catch (error) {
+                    hideAutocomplete();
+                }
+            }
+
+            function displayResults(programs) {
+                hideError();
+                searchResults.innerHTML = '';
+
+                if (programs.length === 0) {
+                    searchResults.innerHTML = '<p style="color: var(--text-secondary); padding: 2rem; text-align: center;">No programs found matching your search.</p>';
+                    searchResults.setAttribute('tabindex', '-1');
+                    return;
+                }
+
+                const resultsContainer = document.createElement('div');
+                resultsContainer.className = 'programs-list';
+
+                programs.forEach(program => {
+                    const programCard = document.createElement('div');
+                    programCard.className = 'program-card';
+
+                    const name = program.name || 'Unknown';
+                    const version = program.version || 'Unknown version';
+                    const site = program.site;
+                    const vulnerabilities = program.vulnerabilities || [];
+                    const updates = program.updates || { available: false, url: null };
+
+                    let html = `
+                        <div class="program-header">
+                            <h3>${escapeHtml(name)}</h3>
+                            <span class="program-version">${escapeHtml(version)}</span>
+                        </div>
+                    `;
+
+                    if (site) {
+                        html += `<p class="program-site"><a href="${escapeHtml(site)}" target="_blank" rel="noopener noreferrer">${escapeHtml(site)}</a></p>`;
+                    }
+
+                    if (updates.available && updates.url) {
+                        html += `<p class="update-available"><strong>Update Available:</strong> <a href="${escapeHtml(updates.url)}" target="_blank" rel="noopener noreferrer">Download Update</a></p>`;
+                    }
+
+                    if (vulnerabilities.length > 0) {
+                        html += '<div class="vulnerabilities-section"><h4>Known Vulnerabilities:</h4><ul class="vulnerabilities-list">';
+                        vulnerabilities.forEach(vuln => {
+                            html += '<li class="vulnerability-item">';
+                            html += `<strong>${escapeHtml(vuln.name || 'Unnamed vulnerability')}</strong>`;
+                            if (vuln.cve) {
+                                html += ` <span class="cve">CVE: ${escapeHtml(vuln.cve)}</span>`;
+                            }
+                            if (vuln.description) {
+                                html += `<p class="vuln-description">${escapeHtml(vuln.description)}</p>`;
+                            }
+                            if (vuln.url) {
+                                html += ` <a href="${escapeHtml(vuln.url)}" target="_blank" rel="noopener noreferrer">More info</a>`;
+                            }
+                            html += '</li>';
+                        });
+                        html += '</ul></div>';
+                    } else {
+                        html += '<p class="no-vulnerabilities">No known vulnerabilities recorded.</p>';
+                    }
+
+                    programCard.innerHTML = html;
+                    resultsContainer.appendChild(programCard);
+                });
+
+                searchResults.appendChild(resultsContainer);
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            async function performSearch() {
+                const query = searchInput.value.trim();
+
+                if (!query) {
+                    showError('Please enter a program name to search.');
+                    return;
+                }
+
+                searchButton.disabled = true;
+                searchButton.textContent = 'Searching...';
+                searchResults.innerHTML = '<p style="color: var(--text-secondary); padding: 2rem; text-align: center;">Searching...</p>';
+                hideError();
+
+                try {
+                    const response = await fetch(`/api/programs/search?q=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        showError(data.error || 'An error occurred while searching.');
+                        searchResults.innerHTML = '';
+                        return;
+                    }
+
+                    displayResults(data.programs || []);
+                } catch (error) {
+                    showError('Failed to connect to the server. Please try again later.');
+                    searchResults.innerHTML = '';
+                } finally {
+                    searchButton.disabled = false;
+                    searchButton.textContent = 'Search';
+                }
+            }
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                lastQuery = query;
+
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    if (query === lastQuery) {
+                        fetchAutocomplete(query);
+                    }
+                }, 300);
+            });
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (autocompleteDropdown.classList.contains('show') && autocompleteItems.length > 0) {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        selectedIndex = Math.min(selectedIndex + 1, autocompleteItems.length - 1);
+                        updateAutocompleteSelection();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        selectedIndex = Math.max(selectedIndex - 1, -1);
+                        updateAutocompleteSelection();
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (selectedIndex >= 0) {
+                            selectAutocompleteItem(selectedIndex);
+                        } else {
+                            performSearch();
+                        }
+                    } else if (e.key === 'Escape') {
+                        hideAutocomplete();
+                    }
+                } else if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.trim().length >= 2) {
+                    fetchAutocomplete(searchInput.value.trim());
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                const isClickInside = searchInput.contains(e.target) ||
+                    autocompleteDropdown.contains(e.target) ||
+                    searchButton.contains(e.target);
+                if (!isClickInside) {
+                    hideAutocomplete();
+                }
+            });
+
+            searchButton.addEventListener('click', performSearch);
+            searchButton.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    performSearch();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && autocompleteDropdown.classList.contains('show')) {
+                    hideAutocomplete();
+                    searchInput.focus();
+                }
+            });
+
+            document.querySelectorAll('a').forEach(link => {
+                link.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        link.click();
+                    }
+                });
+            });
+        </script>
+    </footer>
+</body>
+
+</html>

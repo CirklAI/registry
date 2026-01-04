@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Cirkl Registry</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Cirkl Registry - Admin Panel</h1>
+        <a href="/admin/logout" class="logout-btn">Logout</a>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>Add Program</h2>
+            <div id="message" class="message"></div>
+            <form id="programForm">
+                <div class="form-group">
+                    <label for="programName">Program Name *</label>
+                    <input type="text" id="programName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="programVersion">Version *</label>
+                    <input type="text" id="programVersion" name="version" required>
+                </div>
+                <div class="form-group">
+                    <label for="programSite">Site URL</label>
+                    <input type="url" id="programSite" name="site" placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="updatesAvailable" name="updates_available">
+                        <label for="updatesAvailable">Updates Available</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="updatesUrl">Updates URL</label>
+                    <input type="url" id="updatesUrl" name="updates_url" placeholder="https://example.com/update">
+                </div>
+                <div class="form-group">
+                    <h3 style="color: #dda0dd; margin-bottom: 1rem;">Vulnerabilities</h3>
+                    <div id="vulnerabilities"></div>
+                    <button type="button" class="btn btn-success" style="margin-bottom: 1rem;" onclick="addVulnerability()">+ Add Vulnerability</button>
+                </div>
+                <button type="submit">Add Program</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let vulnerabilityCount = 0;
+
+        function addVulnerability() {
+            const container = document.getElementById('vulnerabilities');
+            const div = document.createElement('div');
+            div.className = 'vulnerability-item';
+            div.id = `vuln-${vulnerabilityCount}`;
+            div.innerHTML = `
+                <h3>Vulnerability ${vulnerabilityCount + 1}</h3>
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" name="vuln_name_${vulnerabilityCount}" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="vuln_description_${vulnerabilityCount}"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>CVE</label>
+                    <input type="text" name="vuln_cve_${vulnerabilityCount}" placeholder="CVE-2024-123456">
+                </div>
+                <div class="form-group">
+                    <label>URL</label>
+                    <input type="url" name="vuln_url_${vulnerabilityCount}" placeholder="https://example.com/vulnerability">
+                </div>
+                <button type="button" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem; margin-top: 0.5rem;" onclick="removeVulnerability(${vulnerabilityCount})">Remove</button>
+            `;
+            container.appendChild(div);
+            vulnerabilityCount++;
+        }
+
+        function removeVulnerability(id) {
+            const element = document.getElementById(`vuln-${id}`);
+            if (element) {
+                element.remove();
+            }
+        }
+
+        function showMessage(text, isError = false) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${isError ? 'error' : 'success'} show`;
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        document.getElementById('programForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            
+            const vulnerabilities = [];
+            for (let i = 0; i < vulnerabilityCount; i++) {
+                const vulnDiv = document.getElementById(`vuln-${i}`);
+                if (vulnDiv) {
+                    const name = formData.get(`vuln_name_${i}`);
+                    if (name) {
+                        vulnerabilities.push({
+                            name: name,
+                            description: formData.get(`vuln_description_${i}`) || '',
+                            cve: formData.get(`vuln_cve_${i}`) || '',
+                            url: formData.get(`vuln_url_${i}`) || ''
+                        });
+                    }
+                }
+            }
+
+            const programData = {
+                name: formData.get('name'),
+                version: formData.get('version'),
+                site: formData.get('site') || '',
+                updates: {
+                    available: formData.get('updates_available') === 'on',
+                    url: formData.get('updates_url') || ''
+                },
+                vulnerabilities: vulnerabilities
+            };
+
+            try {
+                const response = await fetch('/admin/api/programs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(programData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Program added successfully!');
+                    event.target.reset();
+                    document.getElementById('vulnerabilities').innerHTML = '';
+                    vulnerabilityCount = 0;
+                } else {
+                    showMessage(result.error || 'Failed to add program', true);
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, true);
+            }
+        });
+    </script>
+</body>
+</html>

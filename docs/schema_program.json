@@ -1,0 +1,21 @@
+{
+    "programs": [
+        {
+            "name": "string",
+            "version": "string",
+            "vulnerabilities": [
+                {
+                    "name": "string",
+                    "description": "string",
+                    "cve": "string",
+                    "url": "string"
+                }
+            ],
+            "updates": {
+                "available": "boolean",
+                "url": "string"
+            },
+            "site": "string"
+        }
+    ]
+}

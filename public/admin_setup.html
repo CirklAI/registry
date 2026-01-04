@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Setup - Cirkl Registry</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            max-width: 500px;
+        }
+        .login-container h1 {
+            text-align: center;
+        }
+        button {
+            width: 100%;
+        }
+        .error {
+            color: var(--error);
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+        .error.show {
+            display: block;
+        }
+        .info {
+            color: var(--success);
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Admin Setup</h1>
+        <p class="info">This is a one-time setup. Choose a strong password (minimum 12 characters).</p>
+        <form id="setupForm">
+            <div class="form-group">
+                <label for="password">Admin Password (min 12 characters) *</label>
+                <input type="password" id="password" name="password" required minlength="12" autofocus>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password *</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required minlength="12">
+            </div>
+            <button type="submit">Complete Setup</button>
+            <div class="error" id="error"></div>
+        </form>
+    </div>
+    <script>
+        document.getElementById('setupForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('error');
+            
+            errorDiv.classList.remove('show');
+            
+            if (password !== confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            if (password.length < 12) {
+                errorDiv.textContent = 'Password must be at least 12 characters';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            const response = await fetch('/admin/setup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: password })
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                window.location.href = '/admin/login';
+            } else {
+                errorDiv.textContent = result.error || 'Setup failed';
+                errorDiv.classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>

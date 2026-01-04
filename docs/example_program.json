@@ -1,0 +1,21 @@
+{
+    "programs": [
+        {
+            "name": "Firefox",
+            "version": "123.456.789",
+            "vulnerabilities": [
+                {
+                    "name": "Vulnerability 1",
+                    "description": "Description of vulnerability 1",
+                    "cve": "CVE-2024-123456",
+                    "url": "https://example.com/vulnerability-1"
+                }
+            ],
+            "updates": {
+                "available": true,
+                "url": "https://example.com/update"
+            },
+            "site": "https://example.com"
+        }
+    ]
+}

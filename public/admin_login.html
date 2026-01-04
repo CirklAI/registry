@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Cirkl Registry</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container h1 {
+            text-align: center;
+        }
+
+        button {
+            width: 100%;
+        }
+
+        .error {
+            color: var(--error);
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Admin Login</h1>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autofocus>
+            </div>
+            <button type="button" id="loginButton">Login</button>
+            <div class="error" id="error"></div>
+        </form>
+    </div>
+    <script>
+        const form = document.getElementById('loginForm');
+        const loginButton = document.getElementById('loginButton');
+        const errorDiv = document.getElementById('error');
+        
+        async function handleLogin() {
+            errorDiv.classList.remove('show');
+            
+            const formData = new URLSearchParams(new FormData(form));
+            try {
+                const response = await fetch('/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    const result = await response.json();
+                    errorDiv.textContent = result.error || 'Invalid password';
+                    errorDiv.classList.add('show');
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    window.location.href = '/admin';
+                } else {
+                    errorDiv.textContent = result.error || 'Invalid password';
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = 'Login failed. Please try again.';
+                errorDiv.classList.add('show');
+            }
+        }
+        
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            handleLogin();
+            return false;
+        });
+        
+        loginButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            handleLogin();
+            return false;
+        });
+    </script>
+</body>
+</html>

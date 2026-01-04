@@ -1,0 +1,14 @@
+{
+    "programs": [
+        "Firefox",
+        "Chrome",
+        "Safari",
+        "Edge",
+        "Opera",
+        "Brave",
+        "Vivaldi",
+        "Tor Browser",
+        "Waterfox",
+        "Firefox ESR"
+    ]
+}
